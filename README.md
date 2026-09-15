@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://ahtem-tiger.github.io/Ahtem-tiger/">
-    <img src="assets/hero.jpg" alt="Ahtem — fighter" width="100%" />
+    <img src="assets/hero.jpg" alt="Ilia Topuria" width="100%" />
   </a>
   <a href="https://ahtem-tiger.github.io/Ahtem-tiger/">
     <img src="assets/arcade.svg" alt="Tiger Ring" width="100%" />
@@ -78,5 +78,6 @@ mode       fight first · then ship
 
 <p align="center">
   <i>сначала бой — потом коммит</i><br/>
-  <a href="https://github.com/Ahtem-tiger">github.com/Ahtem-tiger</a>
+  <a href="https://github.com/Ahtem-tiger">github.com/Ahtem-tiger</a><br/>
+  <sub>фото: Ilia Topuria, <a href="https://president.ge">president.ge</a>, <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>, кадр изменён</sub>
 </p>
