@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 260" role="img" aria-label="Tiger Ring screensaver">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
@@ -97,7 +98,7 @@
     </g>
 
     <text x="40" y="48" fill="url(#neon)" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="22" font-weight="700" letter-spacing="3">TIGER RING</text>
-    <text x="40" y="70" fill="#d7b8a8" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" letter-spacing="1.5">SCREENSAVER  ·  CATCH MEDALS  ·  DODGE GLOVES</text>
+    <text x="40" y="70" fill="#d7b8a8" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" letter-spacing="1.5">SCREENSAVER  |  CATCH MEDALS  |  DODGE GLOVES</text>
 
     <g font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace">
       <text x="40" y="118" fill="#8a6a62" font-size="10">SCORE</text>
