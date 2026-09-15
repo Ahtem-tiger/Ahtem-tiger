@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Tiger Ring — Ahtem</title>
+  <style>
+    :root { --bg:#0a0707; --gold:#f5c542; --red:#ff4d3d; --line:#6a2a24; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: var(--bg); color: #f3e8e2; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; overflow: hidden; touch-action: none; }
+    .wrap { height: 100%; display: flex; flex-direction: column; }
+    header { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--line); background: #070505; font-size: 12px; letter-spacing: 1px; color: #d7b8a8; }
+    header strong { color: var(--red); letter-spacing: 2px; }
+    canvas { flex: 1; width: 100%; display: block; background: #1a0c0c; }
+    .hud { position: fixed; inset: 56px 16px auto 16px; display: flex; justify-content: space-between; pointer-events: none; font-size: 13px; color: #f3e8e2; text-shadow: 0 1px 8px #000; }
+    .hud b { color: var(--gold); }
+    .overlay { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(7, 5, 5, 0.76); backdrop-filter: blur(6px); }
+    .card { width: min(420px, calc(100vw - 32px)); border: 1px solid var(--line); border-radius: 16px; padding: 28px 24px; background: linear-gradient(180deg, #2a1210, #120808); text-align: center; }
+    .card h1 { color: var(--red); letter-spacing: 3px; font-size: 28px; margin-bottom: 8px; }
+    .card p { color: #d7b8a8; font-size: 13px; line-height: 1.55; margin-bottom: 18px; }
+    button { appearance: none; border: 1px solid var(--red); background: #1a0c0c; color: var(--red); padding: 12px 22px; border-radius: 10px; font: inherit; letter-spacing: 2px; cursor: pointer; }
+    button:hover { background: #2a1412; }
+    .hidden { display: none; }
+    footer { padding: 8px 16px 12px; font-size: 11px; color: #8a6a62; text-align: center; border-top: 1px solid #3a1a16; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <span><strong>AHTEM</strong> // TIGER RING</span>
+      <span>стрелки или тап по сторонам</span>
+    </header>
+    <canvas id="game"></canvas>
+  </div>
+  <div class="hud">
+    <div>SCORE <b id="score">0</b></div>
+    <div>BEST <b id="best">0</b></div>
+  </div>
+  <div class="overlay" id="overlay">
+    <div class="card">
+      <h1>TIGER RING</h1>
+      <p id="msg">Лови золотые медали и уворачивайся от перчаток. Держись в ринге — раунд ускоряется.</p>
+      <button id="start" type="button">FIGHT</button>
+    </div>
+  </div>
+  <footer>Ahtem-tiger · боец · C++ · код и ринг</footer>
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+    const overlay = document.getElementById("overlay");
+    const msg = document.getElementById("msg");
+    const scoreEl = document.getElementById("score");
+    const bestEl = document.getElementById("best");
+    const startBtn = document.getElementById("start");
+    const bestKey = "tiger-ring-best";
+    let best = Number(localStorage.getItem(bestKey) || 0);
+    bestEl.textContent = best;
+    let W = 0, H = 0, running = false, raf = 0;
+    const state = { t: 0, score: 0, speed: 1, playerX: 0.5, items: [], sparks: [] };
+
+    function resize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      W = canvas.clientWidth;
+      H = canvas.clientHeight;
+      canvas.width = Math.floor(W * dpr);
+      canvas.height = Math.floor(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    function reset() {
+      state.t = 0; state.score = 0; state.speed = 1; state.playerX = 0.5; state.items = [];
+      state.sparks = Array.from({ length: 36 }, () => ({ x: Math.random(), y: Math.random() * 0.5, r: Math.random() * 1.6 + 0.4, o: Math.random() }));
+      scoreEl.textContent = "0";
+    }
+    function spawn(kind) {
+      let x = 0.12 + Math.random() * 0.76;
+      if (kind === "glove") {
+        for (let i = 0; i < 6; i++) {
+          if (Math.abs(x - state.playerX) > 0.16) break;
+          x = 0.12 + Math.random() * 0.76;
+        }
+      }
+      state.items.push({ kind, x, y: -0.08 });
+    }
+    function step(dt) {
+      state.t += dt;
+      state.speed = 1 + state.score / 26;
+      if (state.t > Math.max(0.28, 0.82 - state.score * 0.012)) {
+        state.t = 0;
+        spawn(state.score < 18 || Math.random() < 0.68 ? "medal" : "glove");
+      }
+      for (const item of state.items) item.y += dt * 0.29 * state.speed;
+      state.items = state.items.filter((item) => {
+        const dx = item.x - state.playerX;
+        const dy = item.y - 0.84;
+        const hit = dx * dx + dy * dy < 0.0034;
+        if (!hit) return item.y < 1.08;
+        if (item.kind === "medal") {
+          state.score += 10;
+          scoreEl.textContent = String(state.score);
+          return false;
+        }
+        gameOver();
+        return false;
+      });
+    }
+    function roundRect(x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+    function draw() {
+      const g = ctx.createLinearGradient(0, 0, 0, H);
+      g.addColorStop(0, "#1a0a0a");
+      g.addColorStop(0.42, "#3a1412");
+      g.addColorStop(1, "#6a2418");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.fillStyle = "rgba(245,197,66,0.85)";
+      ctx.beginPath();
+      ctx.arc(W * 0.8, H * 0.14, 28, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255,77,61,0.08)";
+      ctx.beginPath();
+      ctx.moveTo(W * 0.8, H * 0.14);
+      ctx.lineTo(W * 0.35, H);
+      ctx.lineTo(W, H);
+      ctx.fill();
+
+      for (const s of state.sparks) {
+        ctx.globalAlpha = 0.25 + s.o * 0.6;
+        ctx.fillStyle = "#f5c542";
+        ctx.fillRect(s.x * W, s.y * H, s.r, s.r);
+      }
+      ctx.globalAlpha = 1;
+
+      ctx.strokeStyle = "#eee8e0";
+      ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.moveTo(0, H * 0.68); ctx.lineTo(W, H * 0.68); ctx.stroke();
+      ctx.strokeStyle = "#c81e1e";
+      ctx.beginPath(); ctx.moveTo(0, H * 0.74); ctx.lineTo(W, H * 0.74); ctx.stroke();
+      ctx.strokeStyle = "#eee8e0";
+      ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(0, H * 0.8); ctx.lineTo(W, H * 0.8); ctx.stroke();
+      ctx.fillStyle = "#8a2a22";
+      ctx.fillRect(0, H * 0.88, W, H * 0.12);
+
+      for (const item of state.items) {
+        const x = item.x * W, y = item.y * H;
+        if (item.kind === "medal") {
+          ctx.fillStyle = "#f5c542";
+          ctx.beginPath(); ctx.arc(x, y, 11, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = "#fff3c4";
+          ctx.beginPath(); ctx.arc(x - 3, y - 3, 3, 0, Math.PI * 2); ctx.fill();
+        } else {
+          ctx.fillStyle = "#c81e1e";
+          ctx.beginPath(); ctx.ellipse(x, y, 16, 11, -0.3, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = "#5a1010";
+          ctx.beginPath(); ctx.ellipse(x + 4, y + 2, 6, 5, -0.3, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+
+      const px = state.playerX * W, py = H * 0.84;
+      ctx.fillStyle = "#e8c8a8";
+      ctx.beginPath(); ctx.arc(px, py - 28, 10, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#141414";
+      roundRect(px - 12, py - 20, 24, 22, 4); ctx.fill();
+      ctx.fillStyle = "#c81e1e";
+      roundRect(px - 22, py - 10, 14, 12, 6); ctx.fill();
+      roundRect(px + 8, py - 10, 14, 12, 6); ctx.fill();
+      ctx.fillStyle = "#111";
+      roundRect(px - 10, py + 2, 8, 14, 2); ctx.fill();
+      roundRect(px + 2, py + 2, 8, 14, 2); ctx.fill();
+    }
+    let last = 0;
+    function loop(ts) {
+      if (!running) return;
+      const dt = Math.min(0.033, (ts - last) / 1000 || 0.016);
+      last = ts; step(dt); draw();
+      raf = requestAnimationFrame(loop);
+    }
+    function start() {
+      overlay.classList.add("hidden");
+      reset(); running = true; last = performance.now();
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(loop);
+    }
+    function gameOver() {
+      running = false;
+      if (state.score > best) {
+        best = state.score;
+        localStorage.setItem(bestKey, String(best));
+        bestEl.textContent = best;
+      }
+      msg.textContent = "Нокаут. Счёт: " + state.score + ". Рекорд: " + best + ".";
+      overlay.classList.remove("hidden");
+    }
+    function moveTo(ratio) { state.playerX = Math.max(0.08, Math.min(0.92, ratio)); }
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") state.playerX = Math.max(0.08, state.playerX - 0.07);
+      if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") state.playerX = Math.min(0.92, state.playerX + 0.07);
+      if ((e.key === " " || e.key === "Enter") && !running) start();
+    });
+    canvas.addEventListener("pointerdown", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      moveTo((e.clientX - rect.left) / rect.width);
+      if (!running) start();
+    });
+    canvas.addEventListener("pointermove", (e) => {
+      if (e.buttons) {
+        const rect = canvas.getBoundingClientRect();
+        moveTo((e.clientX - rect.left) / rect.width);
+      }
+    });
+    startBtn.addEventListener("click", start);
+    window.addEventListener("resize", () => { resize(); draw(); });
+    resize(); draw();
+  </script>
+</body>
+</html>
