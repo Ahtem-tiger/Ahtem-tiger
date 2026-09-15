@@ -79,5 +79,5 @@ mode       fight first · then ship
 <p align="center">
   <i>сначала бой — потом коммит</i><br/>
   <a href="https://github.com/Ahtem-tiger">github.com/Ahtem-tiger</a><br/>
-  <sub>фото: Ilia Topuria, <a href="https://president.ge">president.ge</a>, <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>, кадр изменён</sub>
+  <sub>фото: Ilia Topuria, U.S. Army / Sgt. 1st Class Brittany Primavera, public domain, кадр изменён</sub>
 </p>
